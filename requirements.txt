@@ -1,34 +1,9 @@
-cffi @ file:///Users/runner/miniforge3/conda-bld/cffi_1666183858726/work
-click==8.1.3
-cycler==0.11.0
+torch==1.13.0
+cuda==11.7
+numpy==1.17.2  
 easydict==1.9
-fonttools==4.38.0
-imageio==2.25.1
-importlib-metadata==6.0.0
-joblib==1.2.0
-kiwisolver==1.4.4
-matplotlib==3.5.3
-networkx==2.6.3
-nltk==3.8.1
-numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1649806371302/work
-packaging==23.0
-pandas==1.3.5
-Pillow==6.2.1
-pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1636257122734/work
-pyparsing==3.0.9
-python-dateutil==2.8.2
-pytz==2022.7.1
-PyWavelets==1.3.0
-PyYAML==5.3.1
-regex==2022.10.31
-scikit-image==0.19.3
-scikit-learn==1.0.2
-scipy==1.7.3
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
-threadpoolctl==3.1.0
-tifffile==2021.11.2
-torch==1.1.0
-torchvision==0.3.0
-tqdm==4.64.1
-typing_extensions==4.5.0
-zipp==3.14.0
+pillow==9.3.0
+pandas==0.24.2
+sortedcollections==1.1.2
+nltk==3.4
+torchvision==0.8.1 
