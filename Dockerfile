@@ -13,4 +13,4 @@ WORKDIR /lightweight
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
-CMD python code/pretrain_DAMSM.py --cfg cfg/DAMSM/bird.yml --gpu 0
+#CMD python code/pretrain_DAMSM.py --cfg cfg/DAMSM/bird.yml --gpu 0
