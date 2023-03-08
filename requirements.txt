@@ -1,4 +1,4 @@
-torch==1.10.2
+torch==1.10.1
 numpy==1.19.5
 easydict==1.9
 pillow==8.4.0
