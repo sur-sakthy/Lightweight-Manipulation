@@ -2,7 +2,7 @@ CONFIG_NAME: 'lightweight'
 
 DATASET_NAME: 'birds'
 DATA_DIR: '../data/birds'
-GPU_ID: '2'
+GPU_ID: '0'
 WORKERS: 4
 
 
