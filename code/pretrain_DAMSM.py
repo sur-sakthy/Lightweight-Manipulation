@@ -26,6 +26,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
+import torch.backends.mps as mps
 import torchvision.transforms as transforms
 
 
@@ -170,9 +171,9 @@ def build_models():
         start_epoch = int(start_epoch) + 1
         print('start_epoch', start_epoch)
     if cfg.CUDA:
-        text_encoder = text_encoder.cuda()
-        image_encoder = image_encoder.cuda()
-        labels = labels.cuda()
+        text_encoder = text_encoder.to(device=torch.device("mps"))
+        image_encoder = image_encoder.to(device=torch.device("mps"))
+        labels = labels.to(device=torch.device("mps"))
 
     return text_encoder, image_encoder, labels, start_epoch
 
@@ -212,13 +213,14 @@ if __name__ == "__main__":
     mkdir_p(model_dir)
     mkdir_p(image_dir)
 
-    torch.cuda.set_device(cfg.GPU_ID)
-    cudnn.benchmark = True
+    print(torch.backends.mps.is_available())
+    torch.device('mps')
+    mps.benchmark = True
 
     imsize = cfg.TREE.BASE_SIZE * (2 ** (cfg.TREE.BRANCH_NUM-1))
     batch_size = cfg.TRAIN.BATCH_SIZE
     image_transform = transforms.Compose([
-        transforms.Scale(int(imsize * 76 / 64)),
+        transforms.Resize(int(imsize * 76 / 64)),
         transforms.RandomCrop(imsize),
         transforms.RandomHorizontalFlip()])
     dataset = TextDataset(cfg.DATA_DIR, 'train',

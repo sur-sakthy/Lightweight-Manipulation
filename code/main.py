@@ -91,7 +91,7 @@ def gen_example(wordtoix, algo, imsize, image_transform, norm, data_dir):
             real_imgs = []
             for i in range(len(imgs)):
                 if cfg.CUDA:
-                    real_imgs.append(Variable(imgs[i]).cuda())
+                    real_imgs.append(Variable(imgs[i]).to(device=torch.device("mps")))
                 else:
                     real_imgs.append(Variable(imgs[i]))
 

@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
+import torch.backends.mps as mps
 
 from PIL import Image
 
@@ -35,8 +36,10 @@ class condGANTrainer(object):
             mkdir_p(self.model_dir)
             mkdir_p(self.image_dir)
 
-        torch.cuda.set_device(cfg.GPU_ID)
-        cudnn.benchmark = True
+        print("Apple MPS available:", torch.backends.mps.is_available())
+        print("Apple MPS built:", torch.backends.mps.is_built())
+        torch.device("mps")
+        mps.benchmark = True
 
         self.batch_size = cfg.TRAIN.BATCH_SIZE
         self.max_epoch = cfg.TRAIN.MAX_EPOCH
@@ -89,7 +92,7 @@ class condGANTrainer(object):
                 from model import D_NET64 as D_NET
             elif cfg.TREE.BRANCH_NUM == 2:
                 from model import D_NET128 as D_NET
-            else:  
+            else:
                 from model import D_NET256 as D_NET
             netG = G_DCGAN()
             netsD = [D_NET(b_jcu=False)]
@@ -124,12 +127,12 @@ class condGANTrainer(object):
                     netsD[i].load_state_dict(state_dict)
         # ########################################################### #
         if cfg.CUDA:
-            text_encoder = text_encoder.cuda()
-            image_encoder = image_encoder.cuda()
-            netG.cuda()
-            style_loss = style_loss.cuda()
+            text_encoder = text_encoder.to(device=torch.device("mps"))
+            image_encoder = image_encoder.to(device=torch.device("mps"))
+            netG.to(device=torch.device("mps"))
+            style_loss = style_loss.to(device=torch.device("mps"))
             for i in range(len(netsD)):
-                netsD[i].cuda()
+                netsD[i].to(device=torch.device("mps"))
         return [text_encoder, image_encoder, netG, netsD, epoch, style_loss]
 
     def define_optimizers(self, netG, netsD):
@@ -153,9 +156,9 @@ class condGANTrainer(object):
         fake_labels = Variable(torch.FloatTensor(batch_size).fill_(0))
         match_labels = Variable(torch.LongTensor(range(batch_size)))
         if cfg.CUDA:
-            real_labels = real_labels.cuda()
-            fake_labels = fake_labels.cuda()
-            match_labels = match_labels.cuda()
+            real_labels = real_labels.to(device=torch.device("mps"))
+            fake_labels = fake_labels.to(device=torch.device("mps"))
+            match_labels = match_labels.to(device=torch.device("mps"))
 
         return real_labels, fake_labels, match_labels
 
@@ -179,7 +182,7 @@ class condGANTrainer(object):
 
     def save_img_results(self, netG, noise, sent_emb, words_embs, mask,
                          image_encoder, captions, cap_lens,
-                         gen_iterations, cnn_code, 
+                         gen_iterations, cnn_code,
                          region_features, real_imgs, vgg_features, name='current'):
         # Save images
         fake_imgs, attention_maps, _, _ = netG(noise, sent_emb, words_embs, mask,
@@ -245,19 +248,19 @@ class condGANTrainer(object):
             data_iter = iter(self.data_loader)
             step = 0
             while step < self.num_batches:
-                
+
                 ######################################################
                 # (1) Prepare training data and Compute text embeddings
                 ######################################################
                 data = data_iter.next()
                 imgs, captions, cap_lens, class_ids, keys, wrong_caps, \
                                 wrong_caps_len, wrong_cls_id, noise, word_labels = prepare_data(data)
-                
-                noise = noise.cuda()
-                word_labels = word_labels.cuda()
+
+                noise = noise.to(device=torch.device("mps"))
+                word_labels = word_labels.to(device=torch.device("mps"))
 
                 hidden = text_encoder.init_hidden(batch_size)
-                
+
                 words_embs, sent_emb = text_encoder(captions, cap_lens, hidden)
                 words_embs, sent_emb = words_embs.detach(), sent_emb.detach()
 
@@ -278,11 +281,11 @@ class condGANTrainer(object):
                 vgg_features = style_loss(real_img)[0]
                 fake_imgs, _, mu, logvar = netG(noise, sent_emb, words_embs, mask, \
                                                     cnn_code, region_features, vgg_features)
-                
+
                 # calculate the number of parameters in the generator
-                #pytorch_total_params = sum(p.numel() for p in netG.parameters()) 
+                #pytorch_total_params = sum(p.numel() for p in netG.parameters())
                 #print(pytorch_total_params, " the number of parameters in generator")
-                
+
                 #######################################################
                 # (3) Update D network
                 ######################################################
@@ -292,7 +295,7 @@ class condGANTrainer(object):
                     netsD[i].zero_grad()
                     errD, result = discriminator_loss(netsD[i], imgs[i], fake_imgs[i],
                                               sent_emb, real_labels, fake_labels,
-                                              words_embs, cap_lens, image_encoder, class_ids, w_words_embs, 
+                                              words_embs, cap_lens, image_encoder, class_ids, w_words_embs,
                                               wrong_caps_len, wrong_cls_id, word_labels)
                     # backward and update parameters
                     errD.backward(retain_graph=True)
@@ -304,7 +307,7 @@ class condGANTrainer(object):
                     # calculate the number of parameters in the discriminator
                     #pytorch_total_params = sum(p.numel() for p in netsD[i].parameters()) # if p.requires_grad)
                     #print(pytorch_total_params, " the number of parameters in discriminator")
-                
+
 
                 #######################################################
                 # (4) Update G network: maximize log(D(G(z)))
@@ -329,7 +332,7 @@ class condGANTrainer(object):
 
                 if gen_iterations % 100 == 0:
                     print(D_logs + '\n' + G_logs)
-                
+
                 # save images
                 if gen_iterations % 1000 == 0:
                     backup_para = copy_G_params(netG)
@@ -339,7 +342,7 @@ class condGANTrainer(object):
                                           captions, cap_lens, epoch,
                                           cnn_code, region_features, imgs, vgg_features, name='average')
                     load_params(netG, backup_para)
-                    
+
 
             end_t = time.time()
 
@@ -382,7 +385,7 @@ class condGANTrainer(object):
             else:
                 netG = G_NET()
             netG.apply(weights_init)
-            netG.cuda()
+            netG.to(device=torch.device("mps"))
             netG.eval()
             #
             text_encoder = RNN_ENCODER(self.n_words, nhidden=cfg.TEXT.EMBEDDING_DIM)
@@ -390,7 +393,7 @@ class condGANTrainer(object):
                 torch.load(cfg.TRAIN.NET_E, map_location=lambda storage, loc: storage)
             text_encoder.load_state_dict(state_dict)
             print('Load text encoder from:', cfg.TRAIN.NET_E)
-            text_encoder = text_encoder.cuda()
+            text_encoder = text_encoder.to(device=torch.device("mps"))
             text_encoder.eval()
 
             image_encoder = CNN_ENCODER(cfg.TEXT.EMBEDDING_DIM)
@@ -401,7 +404,7 @@ class condGANTrainer(object):
             for p in image_encoder.parameters():
                 p.requires_grad = False
             print('Load image encoder from:', img_encoder_path)
-            image_encoder = image_encoder.cuda()
+            image_encoder = image_encoder.to(device=torch.device("mps"))
             image_encoder.eval()
 
 
@@ -411,12 +414,12 @@ class condGANTrainer(object):
 
             print("Load the style loss model")
             style_loss.eval()
-            style_loss = style_loss.cuda()
+            style_loss = style_loss.to(device=torch.device("mps"))
 
             batch_size = self.batch_size
             nz = cfg.GAN.Z_DIM
             noise = Variable(torch.FloatTensor(batch_size, nz), volatile=True)
-            noise = noise.cuda()
+            noise = noise.to(device=torch.device("mps"))
 
             model_dir = cfg.TRAIN.NET_G
             state_dict = \
@@ -436,11 +439,11 @@ class condGANTrainer(object):
                     cnt += batch_size
                     if step % 100 == 0:
                         print('step: ', step)
-                    
+
                     imgs, captions, cap_lens, class_ids, keys, wrong_caps, \
                                 wrong_caps_len, wrong_cls_id, noise, word_labels = prepare_data(data)
 
-                    noise = noise.cuda()
+                    noise = noise.to(device=torch.device("mps"))
 
                     hidden = text_encoder.init_hidden(batch_size)
 
@@ -467,7 +470,7 @@ class condGANTrainer(object):
 
                     if idx % 1000 == 0:
                         print(idx)
-   
+
                     for j in range(batch_size):
                         s_tmp = '%s/fake' % (save_dir)
                         folder = s_tmp[:s_tmp.rfind('/')]
@@ -510,7 +513,7 @@ class condGANTrainer(object):
                 torch.load(cfg.TRAIN.NET_E, map_location=lambda storage, loc: storage)
             text_encoder.load_state_dict(state_dict)
             print('Load text encoder from:', cfg.TRAIN.NET_E)
-            text_encoder = text_encoder.cuda()
+            text_encoder = text_encoder.to(device=torch.device("mps"))
             text_encoder.eval()
 
             # The image encoder
@@ -520,7 +523,7 @@ class condGANTrainer(object):
                 torch.load(img_encoder_path, map_location=lambda storage, loc: storage)
             image_encoder.load_state_dict(state_dict)
             print('Load image encoder from:', img_encoder_path)
-            image_encoder = image_encoder.cuda()
+            image_encoder = image_encoder.to(device=torch.device("mps"))
             image_encoder.eval()
 
             style_loss = VGGNet()
@@ -529,7 +532,7 @@ class condGANTrainer(object):
 
             print("Load the style loss model")
             style_loss.eval()
-            style_loss = style_loss.cuda()
+            style_loss = style_loss.to(device=torch.device("mps"))
 
             # The main module
             if cfg.GAN.B_DCGAN:
@@ -542,7 +545,7 @@ class condGANTrainer(object):
                 torch.load(model_dir, map_location=lambda storage, loc: storage)
             netG.load_state_dict(state_dict)
             print('Load G from: ', model_dir)
-            netG.cuda()
+            netG.to(device=torch.device("mps"))
             netG.eval()
 
             for key in data_dic:
@@ -555,17 +558,17 @@ class condGANTrainer(object):
                 captions = Variable(torch.from_numpy(captions), volatile=True)
                 cap_lens = Variable(torch.from_numpy(cap_lens), volatile=True)
 
-                captions = captions.cuda()
-                cap_lens = cap_lens.cuda()
-                for i in range(1):  
+                captions = captions.to(device=torch.device("mps"))
+                cap_lens = cap_lens.to(device=torch.device("mps"))
+                for i in range(1):
                     noise = Variable(torch.FloatTensor(batch_size, nz), volatile=True)
-                    noise = noise.cuda()
+                    noise = noise.to(device=torch.device("mps"))
 
                     #######################################################
                     # (1) Extract text and image embeddings
                     ######################################################
                     hidden = text_encoder.init_hidden(batch_size)
-                    
+
                     # The text embeddings
                     words_embs, sent_emb = text_encoder(captions, cap_lens, hidden)
 

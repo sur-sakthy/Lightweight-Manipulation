@@ -31,7 +31,7 @@ def sent_loss(cnn_code, rnn_code, labels, class_ids,
         masks = np.concatenate(masks, 0)
         masks = torch.BoolTensor(masks)
         if cfg.CUDA:
-            masks = masks.cuda()
+            masks = masks.to(device=torch.device("mps"))
 
     if cnn_code.dim() == 2:
         cnn_code = cnn_code.unsqueeze(0)
@@ -96,7 +96,7 @@ def words_loss(img_features, words_emb, labels,
         masks = np.concatenate(masks, 0)
         masks = torch.BoolTensor(masks)
         if cfg.CUDA:
-            masks = masks.cuda()
+            masks = masks.to(device=torch.device("mps"))
 
     similarities = similarities * cfg.TRAIN.SMOOTH.GAMMA3
 

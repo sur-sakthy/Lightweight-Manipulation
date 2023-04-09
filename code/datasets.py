@@ -46,7 +46,7 @@ def prepare_data(data):
     for i in range(len(imgs)):
         imgs[i] = imgs[i][sorted_cap_indices]
         if cfg.CUDA:
-            real_imgs.append(Variable(imgs[i]).cuda())
+            real_imgs.append(Variable(imgs[i]).to(device=torch.device("mps")))
         else:
             real_imgs.append(Variable(imgs[i]))
 
@@ -58,8 +58,8 @@ def prepare_data(data):
     keys = [keys[i] for i in sorted_cap_indices.numpy()]
 
     if cfg.CUDA:
-        captions = Variable(captions).cuda()
-        sorted_cap_lens = Variable(sorted_cap_lens).cuda()
+        captions = Variable(captions).to(device=torch.device("mps"))
+        sorted_cap_lens = Variable(sorted_cap_lens).to(device=torch.device("mps"))
     else:
         captions = Variable(captions)
         sorted_cap_lens = Variable(sorted_cap_lens)
@@ -71,8 +71,8 @@ def prepare_data(data):
     wrong_cls_id = wrong_cls_id[w_sorted_cap_indices].numpy()
 
     if cfg.CUDA:
-        wrong_caps = Variable(wrong_caps).cuda()
-        w_sorted_cap_lens = Variable(w_sorted_cap_lens).cuda()
+        wrong_caps = Variable(wrong_caps).to(device=torch.device("mps"))
+        w_sorted_cap_lens = Variable(w_sorted_cap_lens).to(device=torch.device("mps"))
     else:
         wrong_caps = Variable(wrong_caps)
         w_sorted_cap_lens = Variable(w_sorted_cap_lens)
