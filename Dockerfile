@@ -1,11 +1,7 @@
 FROM continuumio/miniconda3
 USER root
 
-RUN mkdir -p /lightweight
-WORKDIR /lightweight
-COPY requirements-mine.txt .
 RUN conda create -n lightweight python=3.7
-SHELL ["conda", "run", "-n", "lightweight", "/bin/bash", "-c"]
-RUN pip install -r requirements-mine.txt
-
-#CMD python code/pretrain_DAMSM.py --cfg cfg/DAMSM/bird.yml --gpu 0
+RUN echo "source activate lightweight" > ~/.bashrc
+RUN pip install pandas numpy scikit-image scikit-learn nltk matplotlib pyyaml easydict
+RUN pip install torch==1.12.0 torchvision==0.13.0
