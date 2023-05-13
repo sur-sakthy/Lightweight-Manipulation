@@ -147,8 +147,9 @@ if __name__ == "__main__":
     else:
         cfg.CUDA = False
 
+    print('Is CUDA available: ', torch.cuda.is_available())
     torch.cuda.set_device(cfg.GPU_ID)
-    print("setting device to ", cfg.GPU_ID)
+    print("Setting device to ", cfg.GPU_ID)
 
     if args.data_dir != '':
         cfg.DATA_DIR = args.data_dir
